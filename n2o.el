@@ -58,7 +58,8 @@ Possible return values (except nil):
     :int <- (integerp X)
     :float <- (floatp X)
     :num <- (numberp X)
-    :str <- (stringp X)"
+    :str <- (stringp X)
+    :bool <- (booleanp X)"
   (cond
    ((listp x)
     (gethash (car x) n2o--type-map))
@@ -66,6 +67,7 @@ Possible return values (except nil):
    ((floatp x) :float)
    ((numberp x) :num) ;; Should go after int and float checks
    ((stringp x) :str)
+   ((booleanp x) :bool) ;; Should go after list check
    (t nil)))
 
 (defsubst n2o--?int (x) (eq :int (n2o--typeof x)))
@@ -157,10 +159,14 @@ can be measured (for large number of iterations)."
 ;; Package initialization.
 (let ((type-map (make-hash-table :test 'eq)))
   ;; This map is never "filled enough".
-  (dolist (info '((lsh . :int)
+  (dolist (info '(;; `:int' functions.
+                  (lsh . :int)
+                  ;; `:str' functions.
                   (int-to-string . :str)
                   (number-to-string . :str)
-                  (concat . :str)))
+                  (concat . :str)
+                  ;; `:bool' functions.
+                  (zerop . :bool)))
     (let ((sym (car info))
           (type (cdr info)))
       (puthash sym type type-map)))
