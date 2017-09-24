@@ -161,6 +161,7 @@ can be measured (for large number of iterations)."
   ;; This map is never "filled enough".
   (dolist (info '(;; `:int' functions.
                   (lsh . :int)
+                  (char-syntax . :int)
                   ;; `:str' functions.
                   (int-to-string . :str)
                   (number-to-string . :str)
@@ -171,5 +172,7 @@ can be measured (for large number of iterations)."
           (type (cdr info)))
       (puthash sym type type-map)))
   (setq n2o--type-map type-map))
+
+(provide 'n2o)
 
 ;;; n2o.el ends here
