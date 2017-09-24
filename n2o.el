@@ -76,9 +76,18 @@ Performs tranformations on the source level only."
      `(+ ,x ,x))
     (`(* 2 ,x)
      `(+ ,x ,x))
+    (`(= ,x ,y)
+     (n2o--rewrite-= form x y))
     ;; Do not know how to optimize -- return `form' unchanged.
     (_
      form)))
+
+(defun n2o--rewrite-= (form x y)
+  ;; For integers, `eq' is a valid and faster alternative.
+  (if (or (integerp x)
+          (integerp y))
+      `(eq ,x ,y)
+    form))
 
 (defun n2o--emit-form (compile form for-effect)
   "With COMPILE as a fallback, emit optimized FORM.
