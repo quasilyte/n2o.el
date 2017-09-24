@@ -45,6 +45,34 @@ at the cost of slightly slower compilation."
 
 (advice-add 'byte-compile-form :around #'n2o-advice-byte-compile-form)
 
+(defvar n2o--type-map nil
+  "Maps function name (symbol) to it's return value type.
+The possible types are described in `n2o--typeof' docstring.")
+
+(defun n2o--typeof (x)
+  "Tries to infer proper type of X.
+If impossible, returns nil.
+
+Type names are keywords.
+Possible return values (except nil):
+    :int <- (integerp X)
+    :float <- (floatp X)
+    :num <- (numberp X)
+    :str <- (stringp X)"
+  (cond
+   ((listp x)
+    (gethash (car x) n2o--type-map))
+   ((integerp x) :int)
+   ((floatp x) :float)
+   ((numberp x) :num) ;; Should go after int and float checks
+   ((stringp x) :str)
+   (t nil)))
+
+(defsubst n2o--?int (x) (eq :int (n2o--typeof x)))
+(defsubst n2o--?float (x) (eq :float (n2o--typeof x)))
+(defsubst n2o--?num (x) (eq :num (n2o--typeof x)))
+(defsubst n2o--?str (x) (eq :str (n2o--typeof x)))
+
 (defun n2o-advice-byte-compile-form (compile &rest args)
   "Advice function that is designed to wrap `byte-compile-form' (COMPILE).
 Does simple forwarding if `n2o-enabled' is nil,
@@ -84,8 +112,8 @@ Performs tranformations on the source level only."
 
 (defun n2o--rewrite-= (form x y)
   ;; For integers, `eq' is a valid and faster alternative.
-  (if (or (integerp x)
-          (integerp y))
+  (if (and (n2o--?int x)
+           (n2o--?int y))
       `(eq ,x ,y)
     form))
 
@@ -125,5 +153,17 @@ can be measured (for large number of iterations)."
     (byte-compile-form test)
     (byte-compile-out 'byte-goto-if-not-nil body-label)
     (setq byte-compile--for-effect nil)))
+
+;; Package initialization.
+(let ((type-map (make-hash-table :test 'eq)))
+  ;; This map is never "filled enough".
+  (dolist (info '((lsh . :int)
+                  (int-to-string . :str)
+                  (number-to-string . :str)
+                  (concat . :str)))
+    (let ((sym (car info))
+          (type (cdr info)))
+      (puthash sym type type-map)))
+  (setq n2o--type-map type-map))
 
 ;;; n2o.el ends here
