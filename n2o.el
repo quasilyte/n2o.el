@@ -106,11 +106,23 @@ Performs tranformations on the source level only."
      `(+ ,x ,x))
     (`(* 2 ,x)
      `(+ ,x ,x))
+    (`(eql ,x ,y)
+     (n2o--rewrite-eql form x y))
     (`(= ,x ,y)
      (n2o--rewrite-= form x y))
     ;; Do not know how to optimize -- return `form' unchanged.
     (_
      form)))
+
+(defun n2o--rewrite-eql (form x y)
+  ;; `eql' is slower than `eq' and `equal'.
+  ;; `eql' behaves like `equal' when first operand is float,
+  ;; otherwise it calls `eq' under the hood.
+  (let ((x-type (n2o--typeof x)))
+    (if (and x-type
+             (not (eq :float x-type)))
+        `(eq ,x ,y)
+      form)))
 
 (defun n2o--rewrite-= (form x y)
   ;; For integers, `eq' is a valid and faster alternative.
@@ -162,6 +174,10 @@ can be measured (for large number of iterations)."
   (dolist (info '(;; `:int' functions.
                   (lsh . :int)
                   (char-syntax . :int)
+                  ;; `:float' functions.
+                  (float . :float)
+                  ;; `:num' functions
+                  (string-to-number . :num)
                   ;; `:str' functions.
                   (int-to-string . :str)
                   (number-to-string . :str)
