@@ -106,13 +106,30 @@ Performs tranformations on the source level only."
      `(+ ,x ,x))
     (`(* 2 ,x)
      `(+ ,x ,x))
+    ;; More complex rewrites.
+    (`(format . ,_)
+     (n2o--rewrite-format form))
     (`(eql ,x ,y)
      (n2o--rewrite-eql form x y))
     (`(= ,x ,y)
      (n2o--rewrite-= form x y))
     ;; Do not know how to optimize -- return `form' unchanged.
-    (_
-     form)))
+    (_ form)))
+
+(defun n2o--rewrite-format (form)
+  (pcase form
+    (`(format "%d" ,x)
+     `(number-to-string ,x))
+    (`(format "%s" ,x)
+     ;; %s format is inefficient.
+     (let ((x-type (n2o--typeof x)))
+       (if (memq x-type '(:int :float :num))
+           `(number-to-string ,x)
+         ;; Could return `prin1-to-string', but it
+         ;; requires some investigation whenever this is
+         ;; valid or not.
+         form)))
+    (_ form)))
 
 (defun n2o--rewrite-eql (form x y)
   ;; `eql' is slower than `eq' and `equal'.
@@ -174,6 +191,7 @@ can be measured (for large number of iterations)."
   (dolist (info '(;; `:int' functions.
                   (lsh . :int)
                   (char-syntax . :int)
+                  (point . :int)
                   ;; `:float' functions.
                   (float . :float)
                   ;; `:num' functions
