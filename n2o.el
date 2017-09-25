@@ -82,6 +82,8 @@ Performs tranformations on the source level only."
     (`(* 2 ,x)
      `(+ ,x ,x))
     ;; More complex rewrites.
+    (`(lsh . ,_)
+     (n2o--rewrite-lsh form))
     (`(mapcar . ,_)
      (n2o--rewrite-mapcar form for-effect))
     (`(format . ,_)
@@ -92,6 +94,20 @@ Performs tranformations on the source level only."
      (n2o--rewrite-= form x y))
     ;; Do not know how to optimize -- return `form' unchanged.
     (_ form)))
+
+(defun n2o--rewrite-lsh (form)
+  ;; Replace left shift with multiplication.
+  ;; VM has fast `mult' instruction, while `lsh' requires funcall.
+  ;; Do not replace right shifts with division because it
+  ;; may result in slower code.
+  (let ((value (nth 1 form))
+        (count (nth 2 form)))
+    (if (and (typ-integer? value)
+             (integerp count)
+             (> count 0))
+        (let ((c (expt 2 count)))
+          `(* ,value ,c))
+      form)))
 
 (defun n2o--rewrite-mapcar (form for-effect)
   (if for-effect
