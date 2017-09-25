@@ -35,6 +35,11 @@
 
 ;;; Code:
 
+(require 'typ)
+
+;; This call should not be unconditional, probably.
+(typ-default-annotations-load)
+
 (defcustom n2o-enabled t
   "Non-nil value enables additional byte compiler optimizations.
 
@@ -44,36 +49,6 @@ at the cost of slightly slower compilation."
   :type 'boolean)
 
 (advice-add 'byte-compile-form :around #'n2o-advice-byte-compile-form)
-
-(defvar n2o--type-map nil
-  "Maps function name (symbol) to it's return value type.
-The possible types are described in `n2o--typeof' docstring.")
-
-(defun n2o--typeof (x)
-  "Tries to infer proper type of X.
-If impossible, returns nil.
-
-Type names are keywords.
-Possible return values (except nil):
-    :int <- (integerp X)
-    :float <- (floatp X)
-    :num <- (numberp X)
-    :str <- (stringp X)
-    :bool <- (booleanp X)"
-  (cond
-   ((listp x)
-    (gethash (car x) n2o--type-map))
-   ((integerp x) :int)
-   ((floatp x) :float)
-   ((numberp x) :num) ;; Should go after int and float checks
-   ((stringp x) :str)
-   ((booleanp x) :bool) ;; Should go after list check
-   (t nil)))
-
-(defsubst n2o--?int (x) (eq :int (n2o--typeof x)))
-(defsubst n2o--?float (x) (eq :float (n2o--typeof x)))
-(defsubst n2o--?num (x) (eq :num (n2o--typeof x)))
-(defsubst n2o--?str (x) (eq :str (n2o--typeof x)))
 
 (defun n2o-advice-byte-compile-form (compile &rest args)
   "Advice function that is designed to wrap `byte-compile-form' (COMPILE).
@@ -131,11 +106,11 @@ Performs tranformations on the source level only."
     (`(format "%d" ,x)
      `(number-to-string ,x))
     (`(format "%c" ,x)
-     (if (memq (n2o--typeof x) '(:int :float :num))
+     (if (typ-any-numerical? x)
          `(char-to-string ,x)
        form))
     (`(format "%s" ,x)
-     (if (memq (n2o--typeof x) '(:int :float :num))
+     (if (typ-any-numerical? x)
          `(number-to-string ,x)
        ;; Could return `prin1-to-string', but it
        ;; requires some investigation whenever this is
@@ -147,7 +122,7 @@ Performs tranformations on the source level only."
   ;; `eql' is slower than `eq' and `equal'.
   ;; `eql' behaves like `equal' when first operand is float,
   ;; otherwise it calls `eq' under the hood.
-  (let ((x-type (n2o--typeof x)))
+  (let ((x-type (typ-infer x)))
     (if (and x-type
              (not (eq :float x-type)))
         `(eq ,x ,y)
@@ -155,8 +130,8 @@ Performs tranformations on the source level only."
 
 (defun n2o--rewrite-= (form x y)
   ;; For integers, `eq' is a valid and faster alternative.
-  (if (and (n2o--?int x)
-           (n2o--?int y))
+  (if (and (typ-integer? x)
+           (typ-integer? y))
       `(eq ,x ,y)
     form))
 
@@ -196,29 +171,6 @@ can be measured (for large number of iterations)."
     (byte-compile-form test)
     (byte-compile-out 'byte-goto-if-not-nil body-label)
     (setq byte-compile--for-effect nil)))
-
-;; Package initialization.
-(let ((type-map (make-hash-table :test 'eq)))
-  ;; This map is never "filled enough".
-  (dolist (info '(;; `:int' functions.
-                  (lsh . :int)
-                  (char-syntax . :int)
-                  (point . :int)
-                  ;; `:float' functions.
-                  (float . :float)
-                  ;; `:num' functions
-                  (string-to-number . :num)
-                  ;; `:str' functions.
-                  (int-to-string . :str)
-                  (number-to-string . :str)
-                  (char-to-string . :str)
-                  (concat . :str)
-                  ;; `:bool' functions.
-                  (zerop . :bool)))
-    (let ((sym (car info))
-          (type (cdr info)))
-      (puthash sym type type-map)))
-  (setq n2o--type-map type-map))
 
 (provide 'n2o)
 
