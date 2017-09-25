@@ -88,10 +88,10 @@ be untrue if other advice functions are set."
       (apply compile args)
     (let* ((form (pop args))
            (for-effect (pop args)))
-      (setq form (n2o--source-opt form))
+      (setq form (n2o--source-opt form for-effect))
       (n2o--emit-form compile form for-effect))))
 
-(defun n2o--source-opt (form)
+(defun n2o--source-opt (form for-effect)
   "Try to return optimized version of FORM.
 Performs tranformations on the source level only."
   (pcase form
@@ -107,6 +107,8 @@ Performs tranformations on the source level only."
     (`(* 2 ,x)
      `(+ ,x ,x))
     ;; More complex rewrites.
+    (`(mapcar . ,_)
+     (n2o--rewrite-mapcar form for-effect))
     (`(format . ,_)
      (n2o--rewrite-format form))
     (`(eql ,x ,y)
@@ -115,6 +117,14 @@ Performs tranformations on the source level only."
      (n2o--rewrite-= form x y))
     ;; Do not know how to optimize -- return `form' unchanged.
     (_ form)))
+
+(defun n2o--rewrite-mapcar (form for-effect)
+  (if for-effect
+      (let ((fn (nth 1 form))
+            (seq (nth 2 form)))
+        ;; `mapc' should be used if evaluation result is ignored.
+        `(mapc ,fn ,seq))
+    form))
 
 (defun n2o--rewrite-format (form)
   (pcase form
