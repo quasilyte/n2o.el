@@ -155,15 +155,11 @@ Performs tranformations on the source level only."
   "With COMPILE as a fallback, emit optimized FORM.
 Matches Lisp forms, outputs byte code.
 FOR-EFFECT has the same meaning as in `byte-compile-form'."
+  ;; Disable `discard' outputting for noreturn function calls.
+  (when (and (listp form)
+             (typ-noreturn? (car form)))
+    (setq for-effect nil))
   (pcase form
-    ;; Noreturn function calls should be compiled with `for-effect' bound to nil,
-    ;; because discard after them is a waste.
-    (`(error . ,_)
-     (funcall compile form nil))
-    (`(signal . ,_)
-     (funcall compile form nil))
-    (`(throw . ,_)
-     (funcall compile form nil))
     (`(while ,test . ,body)
      (n2o--emit-while test body))
     (_ (funcall compile form for-effect))))
