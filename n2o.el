@@ -122,11 +122,11 @@ Performs tranformations on the source level only."
     (`(format "%d" ,x)
      `(number-to-string ,x))
     (`(format "%c" ,x)
-     (if (typ-any-numerical? x)
+     (if (typ-number? x)
          `(char-to-string ,x)
        form))
     (`(format "%s" ,x)
-     (if (typ-any-numerical? x)
+     (if (typ-number? x)
          `(number-to-string ,x)
        ;; Could return `prin1-to-string', but it
        ;; requires some investigation whenever this is
