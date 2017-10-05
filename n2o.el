@@ -102,7 +102,7 @@ Performs tranformations on the source level only."
   ;; may result in slower code.
   (let ((value (nth 1 form))
         (count (nth 2 form)))
-    (if (and (typ-integer? value)
+    (if (and (typ-infer-integer? value)
              (integerp count)
              (> count 0))
         (let ((c (expt 2 count)))
@@ -122,11 +122,11 @@ Performs tranformations on the source level only."
     (`(format "%d" ,x)
      `(number-to-string ,x))
     (`(format "%c" ,x)
-     (if (typ-number? x)
+     (if (typ-infer-number? x)
          `(char-to-string ,x)
        form))
     (`(format "%s" ,x)
-     (if (typ-number? x)
+     (if (typ-infer-number? x)
          `(number-to-string ,x)
        ;; Could return `prin1-to-string', but it
        ;; requires some investigation whenever this is
@@ -146,8 +146,8 @@ Performs tranformations on the source level only."
 
 (defun n2o--rewrite-= (form x y)
   ;; For integers, `eq' is a valid and faster alternative.
-  (if (and (typ-integer? x)
-           (typ-integer? y))
+  (if (and (typ-infer-integer? x)
+           (typ-infer-integer? y))
       `(eq ,x ,y)
     form))
 
