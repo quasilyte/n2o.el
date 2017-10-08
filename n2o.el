@@ -138,6 +138,8 @@ Performs tranformations on the source level only."
          `(char-to-string ,x)
        form))
     (`(format "%s" ,x)
+     ;; TODO: may also be a good idea to check for `:symbol'
+     ;;       and use `symbol-name'.
      (if (typ-infer-number? x)
          `(number-to-string ,x)
        ;; Could return `prin1-to-string', but it
