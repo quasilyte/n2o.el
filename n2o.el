@@ -94,6 +94,8 @@ Performs tranformations on the source level only."
     (`(alist-get ,key ,alist)
      `(cdr (assq ,key ,alist)))
     ;; More complex rewrites.
+    (`(assoc ,key ,alist)
+     (n2o--rewrite-assoc form key alist))
     (`(lsh . ,_)
      (n2o--rewrite-lsh form))
     (`(mapcar . ,_)
@@ -106,6 +108,11 @@ Performs tranformations on the source level only."
      (n2o--rewrite-= form x y))
     ;; Do not know how to optimize -- return `form' unchanged.
     (_ form)))
+
+(defun n2o--rewrite-assoc (form key alist)
+  (if (memq (typ-infer key) '(:integer :symbol))
+      `(assq ,key ,alist)
+    form))
 
 (defun n2o--rewrite-lsh (form)
   ;; Replace left shift with multiplication.
