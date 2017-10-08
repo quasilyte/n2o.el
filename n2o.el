@@ -90,6 +90,9 @@ Performs tranformations on the source level only."
      `(min ,x ,y))
     (`(if (< ,x ,y) ,y ,x)
      `(max ,x ,y))
+    ;; Inlining for some popular functions.
+    (`(alist-get ,key ,alist)
+     `(cdr (assq ,key ,alist)))
     ;; More complex rewrites.
     (`(lsh . ,_)
      (n2o--rewrite-lsh form))
