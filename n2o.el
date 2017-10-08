@@ -81,6 +81,15 @@ Performs tranformations on the source level only."
      `(+ ,x ,x))
     (`(* 2 ,x)
      `(+ ,x ,x))
+    ;; Fix amateur code.
+    (`(if (> ,x ,y) ,x ,y)
+     `(max ,x ,y))
+    (`(if (> ,x ,y) ,y ,x)
+     `(min ,x ,y))
+    (`(if (< ,x ,y) ,x ,y)
+     `(min ,x ,y))
+    (`(if (< ,x ,y) ,y ,x)
+     `(max ,x ,y))
     ;; More complex rewrites.
     (`(lsh . ,_)
      (n2o--rewrite-lsh form))
