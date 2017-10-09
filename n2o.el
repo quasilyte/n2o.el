@@ -93,6 +93,8 @@ Performs tranformations on the source level only."
     ;; Inlining for some popular functions.
     (`(alist-get ,key ,alist)
      `(cdr (assq ,key ,alist)))
+    (`(nth 2 ,list)
+     `(car (cdr (cdr ,list))))
     ;; More complex rewrites.
     (`(assoc ,key ,alist)
      (n2o--rewrite-assoc form key alist))
