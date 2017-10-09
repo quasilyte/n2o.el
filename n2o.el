@@ -106,6 +106,8 @@ Performs tranformations on the source level only."
      (n2o--rewrite-eql form x y))
     (`(= ,x ,y)
      (n2o--rewrite-= form x y))
+    (`(/= ,x ,y)
+     (n2o--rewrite-/= form x y))
     ;; Do not know how to optimize -- return `form' unchanged.
     (_ form)))
 
@@ -164,6 +166,13 @@ Performs tranformations on the source level only."
              (not (eq :float x-type)))
         `(eq ,x ,y)
       form)))
+
+(defun n2o--rewrite-/= (form x y)
+  ;; Same reasoning as in `=' vs `eq'.
+  (if (and (typ-infer-integer? x)
+           (typ-infer-integer? y))
+      `(not (eq ,x ,y))
+    form))
 
 (defun n2o--rewrite-= (form x y)
   ;; For integers, `eq' is a valid and faster alternative.
