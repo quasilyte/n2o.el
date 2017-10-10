@@ -90,6 +90,10 @@ Performs tranformations on the source level only."
      `(min ,x ,y))
     (`(if (< ,x ,y) ,y ,x)
      `(max ,x ,y))
+    (`(eq nil ,x)
+     `(null ,x))
+    (`(eq ,x nil)
+     `(null ,x))
     ;; Inlining for some popular functions.
     (`(alist-get ,key ,alist)
      `(cdr (assq ,key ,alist)))
