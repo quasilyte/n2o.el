@@ -81,7 +81,21 @@ Performs tranformations on the source level only."
      `(+ ,x ,x))
     (`(* 2 ,x)
      `(+ ,x ,x))
-    ;; Fix amateur code.
+    ;; Cdr-safe and car-safe.
+    ;; TODO: the bound patterns should be recursive.
+    (`(if (consp ,x) (car ,x) nil)
+     `(car-safe ,x))
+    (`(if (consp ,x) (car ,x) ,y)
+     `(or (car-safe ,x) ,y))
+    (`(if (consp ,x) (cdr ,x) nil)
+     `(cdr-safe ,x))
+    (`(if (consp ,x) (cdr ,x) ,y)
+     `(or (cdr-safe ,x) ,y))
+    (`(if (listp ,x) (car ,x) nil)
+     `(car-safe ,x))
+    (`(if (listp ,x) (cdr ,x) nil)
+     `(cdr-safe ,x))
+    ;; Replace forms with faster alternatives.
     (`(if (> ,x ,y) ,x ,y)
      `(max ,x ,y))
     (`(if (> ,x ,y) ,y ,x)
