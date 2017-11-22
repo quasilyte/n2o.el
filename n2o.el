@@ -229,7 +229,7 @@ Surprisingly, the speedup is not significant, but
 can be measured (for large number of iterations)."
   (let ((cond-label (byte-compile-make-tag))
         (body-label (byte-compile-make-tag)))
-    ;; Make a just into condition check right away.
+    ;; Make a jump into condition check right away.
     ;; If condition is true, looping commences.
     ;; This kind of `while' compilation is very
     ;; popular among native code producing compilers.
